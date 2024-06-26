@@ -3,10 +3,11 @@ import os
 import time
 import random
 pygame.font.init()
+pygame.mixer.init()
 
 WIDTH, HEIGHT = 750, 750
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Space Invaders')
+pygame.display.set_caption('Game')
 
 RED_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_red_small.png"))
 GREEN_SPACE_SHIP = pygame.image.load(os.path.join("assets", "pixel_ship_green_small.png"))
@@ -19,6 +20,11 @@ BLUE_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_blue.png"))
 YELLOW_LASER = pygame.image.load(os.path.join("assets", "pixel_laser_yellow.png"))
 
 BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join("assets", "background-black.png")), (WIDTH, HEIGHT))
+
+SHOOT_SOUND_EFFECT = pygame.mixer.Sound(os.path.join("assets", "shoot.wav"))
+SHOOT_SOUND_EFFECT.set_volume(0.2)
+
+BACKGROUND_MUSIC = pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
 
 
 class Laser:
@@ -80,6 +86,8 @@ class Ship:
             laser = Laser(self.x, self.y, self.laser_img)
             self.lasers.append(laser)
             self.cool_down_counter = 1
+            SHOOT_SOUND_EFFECT.play()
+            
     
     def get_width(self):
         return self.ship_img.get_width()
@@ -170,10 +178,10 @@ def main():
     def redraw_window():
         WIN.blit(BACKGROUND, (0, 0))
         
-        lives_label = main_font.render(f'Lives: {lives}', 1, (255, 255, 255))
+        #lives_label = main_font.render(f'Lives: {lives}', 1, (255, 255, 255))
         level_label = main_font.render(f'Level: {level}', 1, (255, 255, 255))
         
-        WIN.blit(lives_label, (10, 10))
+        #WIN.blit(lives_label, (10, 10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
         
         
@@ -192,6 +200,8 @@ def main():
     while run:
         clock.tick(FPS)
         redraw_window()
+        
+        BACKGROUND_MUSIC.
         
         if lives <= 0 or player.health <= 0:
             lost = True
@@ -226,6 +236,7 @@ def main():
       
         if keys[pygame.K_SPACE]:
             player.shoot()
+            
       
       
         for enemy in enemies[:]:
