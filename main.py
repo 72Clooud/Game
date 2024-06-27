@@ -27,6 +27,11 @@ SHOOT_SOUND_EFFECT.set_volume(0.2)
 DESTROY_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'invaderkilled.wav'))
 DESTROY_SOUND_EFFECT.set_volume(0.15)
 
+HEAL_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join('assets', 'heal.png')), (50, 50))
+
+HEAL_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'heal_sound.mp3'))
+
+
 pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
 pygame.mixer.music.set_volume(0.2)
 pygame.mixer.music.play(loops=-1, fade_ms=2000)
@@ -152,6 +157,32 @@ class Enemy(Ship):
             laser = Laser(self.x-20, self.y, self.laser_img)
             self.lasers.append(laser)
             self.cool_down_counter = 1
+            
+class Heal:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.heal_img = HEAL_IMAGE
+        self.mask = pygame.mask.from_surface(self.heal_img)
+        
+    def draw(self, window):
+        window.blit(self.heal_img, (self.x, self.y))
+        
+    def move(self, vel):
+        self.y += vel
+
+    def off_screen(self, height):
+        return not(self.y <= height and self.y >= 0)
+
+    def collision(self, obj):
+        return collide(obj, self)
+    
+    def get_width(self):
+        return self.heal_img.get_width()
+    
+    def get_height(self):
+        return self.heal_img.get_height()
+        
         
 def collide(obj1, obj2):
     offset_x = obj2.x - obj1.x 
@@ -169,6 +200,10 @@ def main():
     enemies = []
     wave_len = 5
     enemy_vel = 1
+    
+    heals = []
+    heal_vel = 1
+    heal_rate_spawn = 2000
     
     
     player_vel = 5 
@@ -194,6 +229,9 @@ def main():
         
         for enemy in enemies:
             enemy.draw(WIN)
+            
+        for heal in heals:
+            heal.draw(WIN)
         
         player.draw(WIN)
 
@@ -225,6 +263,10 @@ def main():
             for i in range(wave_len):
                 enemy = Enemy(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100), random.choice(['red', 'blue', 'green']))
                 enemies.append(enemy)
+                
+        if random.randrange(0, heal_rate_spawn) == 1:
+            heal = Heal(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
+            heals.append(heal)
             
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -258,7 +300,18 @@ def main():
             elif enemy.y + enemy.get_height() > HEIGHT:
                 lives -= 1
                 enemies.remove(enemy)
-                
+        
+        for heal in heals[:]: 
+            heal.move(heal_vel)
+            if collide(heal, player):
+                player.health += 20
+                HEAL_SOUND_EFFECT.play()
+                heals.remove(heal)  
+            if player.health > player.max_health:  
+                player.health = player.max_health
+            elif heal.y + heal.get_height() > HEIGHT:
+                heals.remove()            
+            
         player.move_lasers(-laser_vel, enemies)
         
 def main_menu():
