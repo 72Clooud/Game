@@ -24,7 +24,13 @@ BACKGROUND = pygame.transform.scale(pygame.image.load(os.path.join("assets", "ba
 SHOOT_SOUND_EFFECT = pygame.mixer.Sound(os.path.join("assets", "shoot.wav"))
 SHOOT_SOUND_EFFECT.set_volume(0.2)
 
-BACKGROUND_MUSIC = pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
+DESTROY_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'invaderkilled.wav'))
+DESTROY_SOUND_EFFECT.set_volume(0.15)
+
+pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
+pygame.mixer.music.set_volume(0.2)
+pygame.mixer.music.play(loops=-1, fade_ms=2000)
+
 
 
 class Laser:
@@ -113,6 +119,7 @@ class Player(Ship):
                 for obj in objs:
                     if laser.collision(obj):
                         objs.remove(obj)
+                        DESTROY_SOUND_EFFECT.play()
                         if laser in self.lasers:
                             self.lasers.remove(laser)
                         
@@ -178,10 +185,10 @@ def main():
     def redraw_window():
         WIN.blit(BACKGROUND, (0, 0))
         
-        #lives_label = main_font.render(f'Lives: {lives}', 1, (255, 255, 255))
+        lives_label = main_font.render(f'Lives: {lives}', 1, (255, 255, 255))
         level_label = main_font.render(f'Level: {level}', 1, (255, 255, 255))
         
-        #WIN.blit(lives_label, (10, 10))
+        WIN.blit(lives_label, (10, 10))
         WIN.blit(level_label, (WIDTH - level_label.get_width() - 10, 10))
         
         
@@ -201,7 +208,6 @@ def main():
         clock.tick(FPS)
         redraw_window()
         
-        BACKGROUND_MUSIC.
         
         if lives <= 0 or player.health <= 0:
             lost = True
