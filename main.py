@@ -28,8 +28,10 @@ DESTROY_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'invaderkilled.
 DESTROY_SOUND_EFFECT.set_volume(0.15)
 
 HEAL_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join('assets', 'heal.png')), (50, 50))
-
 HEAL_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'heal_sound.mp3'))
+
+UPGRADE_IMAGE = pygame.transform.scale(pygame.image.load(os.path.join('assets', 'upgrade.png')), (50, 50))
+UPGRADE_SOUND_EFFECT = pygame.mixer.Sound(os.path.join('assets', 'upgrade_sound.mp3'))
 
 
 pygame.mixer.music.load(os.path.join('assets', 'music.mp3'))
@@ -76,7 +78,7 @@ class Ship:
             laser.draw(window)
             
     def move_lasers(self, vel, obj):
-        self.cooldown()
+        self.cooldown(0)
         for laser in self.lasers:
             laser.move(vel)
             if laser.off_screen(HEIGHT):
@@ -86,8 +88,8 @@ class Ship:
                 self.lasers.remove(laser)
             
                     
-    def cooldown(self):
-        if self.cool_down_counter >= self.COOLDOWN:
+    def cooldown(self, upgrade_cooldown_level):
+        if self.cool_down_counter >= self.COOLDOWN - upgrade_cooldown_level:
             self.cool_down_counter = 0
         elif self.cool_down_counter > 0:
             self.cool_down_counter += 1
@@ -114,8 +116,8 @@ class Player(Ship):
         self.mask = pygame.mask.from_surface(self.ship_img)
         self.max_health = health
         
-    def move_lasers(self, vel, objs):
-        self.cooldown()
+    def move_lasers(self, vel, objs, upgrade_level):
+        self.cooldown(upgrade_level)
         for laser in self.lasers:
             laser.move(vel)
             if laser.off_screen(HEIGHT):
@@ -183,6 +185,31 @@ class Heal:
     def get_height(self):
         return self.heal_img.get_height()
         
+class Upgrade(Heal):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.upgrade_img = UPGRADE_IMAGE
+        self.mask = pygame.mask.from_surface(self.upgrade_img)
+        
+    def draw(self, window):
+        window.blit(self.upgrade_img, (self.x, self.y))
+        
+    def move(self, vel):
+        self.y += vel
+
+    def off_screen(self, height):
+        return not(self.y <= height and self.y >= 0)
+
+    def collision(self, obj):
+        return collide(obj, self)
+    
+    def get_width(self):
+        return self.upgrade_img.get_width()
+    
+    def get_height(self):
+        return self.upgrade_img.get_height()
+        
+        
         
 def collide(obj1, obj2):
     offset_x = obj2.x - obj1.x 
@@ -205,6 +232,10 @@ def main():
     heal_vel = 1
     heal_rate_spawn = 2000
     
+    upgrades = []
+    upgrades_vel = 1
+    upgrade_vel = 0
+    upgrade_cooldown_value = 0
     
     player_vel = 5 
     laser_vel = 5
@@ -233,6 +264,9 @@ def main():
         for heal in heals:
             heal.draw(WIN)
         
+        for upgrade in upgrades:
+            upgrade.draw(WIN)
+        
         player.draw(WIN)
 
         if lost:
@@ -257,6 +291,10 @@ def main():
             else:
                 continue
         
+        if (len(enemies) == 0) and (level >= 1):
+            upgrade = Upgrade(random.randrange(50, WIDTH - 100), 0)
+            upgrades.append(upgrade)
+        
         if len(enemies) == 0:
             level += 1
             wave_len += 5
@@ -268,6 +306,8 @@ def main():
             heal = Heal(random.randrange(50, WIDTH - 100), random.randrange(-1500, -100))
             heals.append(heal)
             
+            
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
@@ -283,7 +323,7 @@ def main():
             player.y += player_vel
       
         if keys[pygame.K_SPACE]:
-            player.shoot()
+            player.shoot() 
             
       
       
@@ -310,9 +350,20 @@ def main():
             if player.health > player.max_health:  
                 player.health = player.max_health
             elif heal.y + heal.get_height() > HEIGHT:
-                heals.remove()            
+                heals.remove(heal)
+        
+        for upgrade in upgrades[:]: 
+            upgrade.move(upgrades_vel)
+            print(upgrade.x, upgrade.y)
+            if collide(upgrade, player):
+                upgrade_vel += 1
+                upgrade_cooldown_value += 2
+                UPGRADE_SOUND_EFFECT.play()
+                upgrades.remove(upgrade)  
+            elif upgrade.y + upgrade.get_height() > HEIGHT:
+                upgrades.remove(upgrade)
             
-        player.move_lasers(-laser_vel, enemies)
+        player.move_lasers(-laser_vel - upgrade_vel, enemies, upgrade_level=upgrade_cooldown_value)
         
 def main_menu():
     title_font = pygame.font.SysFont("comicsans", 50)
