@@ -354,7 +354,6 @@ def main():
         
         for upgrade in upgrades[:]: 
             upgrade.move(upgrades_vel)
-            print(upgrade.x, upgrade.y)
             if collide(upgrade, player):
                 upgrade_vel += 1
                 upgrade_cooldown_value += 2
